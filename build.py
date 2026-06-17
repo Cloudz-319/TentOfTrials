@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+Build orchestration script for the Tent of Trials platform.
+Compiles all modules (Rust backend, TypeScript frontend, Go market engine, etc.)
+and generates encrypted diagnostic artifacts for CI validation.
+"""
 
 import argparse
 import datetime
