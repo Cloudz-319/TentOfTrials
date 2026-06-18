@@ -815,6 +815,38 @@ def print_summary(results: list[tuple[str, bool, float, str, Optional[str]]]):
           f"{color(str(failed) + ' failed', Colors.RED)}, "
           f"{total_time:.1f}s total")
 
+def parse_module_names(raw: str) -> list[str]:
+    """Parse comma-separated module names with optional spaces."""
+    return [n.strip() for n in raw.split(",") if n.strip()]
+
+
+def validate_module_names(names: list[str]) -> tuple[list[str], list[str]]:
+    """Returns (valid_names, invalid_names) for the given module names."""
+    valid = {m.name for m in MODULES}
+    found = [n for n in names if n in valid]
+    not_found = [n for n in names if n not in valid]
+    return found, not_found
+
+
+def select_modules(raw: str) -> tuple[list[Module], list[str]]:
+    """Resolve module selection string to (modules, invalid_names)."""
+    if raw == "all":
+        return list(MODULES), []
+    names = parse_module_names(raw)
+    found, not_found = validate_module_names(names)
+    selected = [m for m in MODULES if m.name in found]
+    return selected, not_found
+
+
+def list_modules() -> None:
+    """Print available modules with language, directory, and build command."""
+    print(f"  {color('Available modules:', Colors.BOLD)}")
+    for m in MODULES:
+        print(f"    {color(m.name, Colors.CYAN)} ({m.language})")
+        print(f"      dir: {m.dir.relative_to(ROOT)}")
+        print(f"      build: {' '.join(m.build_cmd)}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Tent of Trials  -  Multi-Language Build System",
@@ -850,22 +882,25 @@ Diagnostic bundle:
         help="Show detailed build output",
     )
     parser.add_argument(
-        "--list", action="store_true",
+        "--list", "--list-modules", action="store_true",
+        dest="list",
         help="List available modules and exit",
     )
 
     args = parser.parse_args()
+
+    selected, not_found = select_modules(args.module)
+    if not_found:
+        print(f"  Invalid module(s): {', '.join(not_found)}")
+        print(f"  Available: {', '.join(m.name for m in MODULES)}")
+        return 1
 
     print(f"\n  {color('Tent of Trials: building', Colors.CYAN)}")
     print(f"  Working directory: {ROOT}")
     print()
 
     if args.list:
-        print(f"  {color('Available modules:', Colors.BOLD)}")
-        for m in MODULES:
-            print(f"    {color(m.name, Colors.CYAN)} ({m.language})")
-            print(f"      dir: {m.dir.relative_to(ROOT)}")
-            print(f"      build: {' '.join(m.build_cmd)}")
+        list_modules()
         return 0
 
     print(f"  {color('Checking prerequisites...', Colors.GRAY)}")
@@ -879,16 +914,6 @@ Diagnostic bundle:
         print(f"  {color(msg, Colors.GRAY)}")
     else:
         print(f"  {color('✓ All prerequisites found', Colors.GREEN)}")
-    if args.module == "all":
-        selected = MODULES
-    else:
-        names = [n.strip() for n in args.module.split(",")]
-        selected = [m for m in MODULES if m.name in names]
-        not_found = set(names) - {m.name for m in MODULES}
-        if not_found:
-            print(f"  {color('✗ Unknown modules:', Colors.RED)} {', '.join(not_found)}")
-            print(f"    Available: {', '.join(m.name for m in MODULES)}")
-            return 1
 
     if not selected:
         print(f"  No modules selected.")
