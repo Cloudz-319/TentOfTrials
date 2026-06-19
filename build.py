@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Build and diagnostic artifact generator for the Tent of Trials workspace."""
+
 
 import argparse
 import datetime
