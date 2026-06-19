@@ -811,15 +811,12 @@ Diagnostic bundle:
         help="Show detailed build output",
     )
     parser.add_argument(
-        "--list", action="store_true",
+        "--list", "--list-modules", action="store_true",
+        dest="list",
         help="List available modules and exit",
     )
 
     args = parser.parse_args()
-
-    print(f"\n  {color('Tent of Trials: building', Colors.CYAN)}")
-    print(f"  Working directory: {ROOT}")
-    print()
 
     if args.list:
         print(f"  {color('Available modules:', Colors.BOLD)}")
@@ -828,6 +825,19 @@ Diagnostic bundle:
             print(f"      dir: {m.dir.relative_to(ROOT)}")
             print(f"      build: {' '.join(m.build_cmd)}")
         return 0
+
+    # Validate module selection early - fail fast on invalid names
+    if args.module != "all":
+        names = [n.strip() for n in args.module.split(",")]
+        not_found = set(names) - {m.name for m in MODULES}
+        if not_found:
+            print(f"  {color('✗ Unknown modules:', Colors.RED)} {', '.join(not_found)}")
+            print(f"    Available: {', '.join(m.name for m in MODULES)}")
+            return 1
+
+    print(f"\n  {color('Tent of Trials: building', Colors.CYAN)}")
+    print(f"  Working directory: {ROOT}")
+    print()
 
     print(f"  {color('Checking prerequisites...', Colors.GRAY)}")
     missing = check_prerequisites()
@@ -845,11 +855,6 @@ Diagnostic bundle:
     else:
         names = [n.strip() for n in args.module.split(",")]
         selected = [m for m in MODULES if m.name in names]
-        not_found = set(names) - {m.name for m in MODULES}
-        if not_found:
-            print(f"  {color('✗ Unknown modules:', Colors.RED)} {', '.join(not_found)}")
-            print(f"    Available: {', '.join(m.name for m in MODULES)}")
-            return 1
 
     if not selected:
         print(f"  No modules selected.")
