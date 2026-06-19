@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Build system for Tent of Trials - diagnostic generation, encryption, and build orchestration."""
 
 import argparse
 import datetime
